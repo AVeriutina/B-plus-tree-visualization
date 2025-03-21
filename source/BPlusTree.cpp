@@ -7,61 +7,61 @@
 #include <iterator>
 #include <memory>
 
-namespace detail {
+namespace BPTree {
 
-bool IsLeaf(const Node* node) {
+namespace Detail {
+
+bool IsLeaf(const Node *node) {
   assert(node != nullptr);
   return node->children.empty();
 }
 
-Node* LeftSibling(Node* right_sibling) {
-  assert(right_sibling);
-  if (right_sibling->parent == nullptr) {
+Node *LeftSibling(Node *node) {
+  assert(node);
+  const Node *parent = node->parent;
+  if (parent == nullptr) {
     return nullptr;
   }
-  auto iter_of_right =
-      std::find_if(right_sibling->parent->children.begin(),
-                   right_sibling->parent->children.end(),
-                   [right_sibling](const std::unique_ptr<Node>& lhs) {
-                     return lhs.get() == right_sibling;
-                   });
-  assert(iter_of_right != right_sibling->parent->children.end());
-  if (iter_of_right == right_sibling->parent->children.begin()) {
+  auto iter_of_right = std::ranges::find_if(
+      parent->children,
+
+      [node](const std::unique_ptr<Node> &lhs) { return lhs.get() == node; });
+  assert(iter_of_right != parent->children.end());
+  if (iter_of_right == parent->children.begin()) {
     return nullptr;
   }
   return (*(iter_of_right - 1)).get();
 }
 
-Node* RightSibling(Node* left_sibling) {
-  assert(left_sibling);
-  if (left_sibling->parent == nullptr) {
+Node *RightSibling(Node *node) {
+  assert(node);
+  const Node *parent = node->parent;
+  if (parent == nullptr) {
     return nullptr;
   }
-  auto iter_of_left =
-      std::find_if(left_sibling->parent->children.begin(),
-                   left_sibling->parent->children.end(),
-                   [left_sibling](const std::unique_ptr<Node>& lhs) {
-                     return lhs.get() == left_sibling;
-                   });
-  assert(iter_of_left != left_sibling->parent->children.end());
-  if (iter_of_left == left_sibling->parent->children.end() - 1) {
+  auto iter_of_left = std::ranges::find_if(
+      parent->children,
+
+      [node](const std::unique_ptr<Node> &lhs) { return lhs.get() == node; });
+  assert(iter_of_left != parent->children.end());
+  if (iter_of_left == parent->children.end() - 1) {
     return nullptr;
   }
   return (*(iter_of_left + 1)).get();
 }
 
-bool IsKeyInNode(const Node* node, Node::KeyType key) {
+bool IsKeyInNode(const Node *node, KeyType key) {
   assert(node != nullptr);
-  return std::binary_search(node->keys.begin(), node->keys.end(), key);
+  return std::ranges::binary_search(node->keys, key);
 }
 
-auto FindIterOfKey(const std::vector<Node::KeyType>& keys, Node::KeyType key) {
-  auto iter = std::lower_bound(keys.begin(), keys.end(), key);
-  assert(iter != keys.end() && *iter == key);
+auto FindIterOfKey(const Node &node, KeyType key) {
+  auto iter = std::ranges::lower_bound(node.keys, key);
+  assert(iter != node.keys.end() && *iter == key);
   return iter;
 }
 
-void Link(Node* left_node, Node* right_node) {
+void Link(Node *left_node, Node *right_node) {
   if (left_node) {
     left_node->right = right_node;
   }
@@ -70,43 +70,58 @@ void Link(Node* left_node, Node* right_node) {
   }
 }
 
-void UpdateParent(const std::vector<std::unique_ptr<Node>>& children,
-                  Node* new_parant) {
-  for (const std::unique_ptr<Node>& child : children) {
+void UpdateParent(const std::vector<std::unique_ptr<Node>> &children,
+                  Node *new_parant) {
+  for (const auto &child : children) {
     child->parent = new_parant;
   }
 }
 
-bool IsNodeStateCorrect(Node* node) {
+bool IsNodeStateCorrect(Node *node) {
   if (!IsLeaf(node)) {
     return node->keys.size() + 1 == node->children.size();
   }
   return true;
 }
 
-bool IsLinkWithChildCorrect(Node* parent, Node* child) {
+bool IsLinkWithChildCorrect(Node *parent, Node *child) {
   return child->parent == parent;
 }
 
-}  // namespace detail
+Node *GetFistChild(Node *node) {
+  assert(node);
+  assert(!IsLeaf(node));
+  return node->children.front().get();
+}
+
+Node *GetLastChild(Node *node) {
+  assert(node);
+  assert(!IsLeaf(node));
+  return node->children.back().get();
+}
+
+}  // namespace Detail
 
 BPlusTree::BPlusTree(int32_t max_degree) {
   assert(max_degree > 1);
   max_degree_ = max_degree;
 }
 
-bool BPlusTree::IsStateCorrect(Node* ptr) {
+bool BPlusTree::IsStateCorrect(Node *ptr) {
   if (ptr == nullptr) {
     return true;
   }
   if (!IsNodeStateCorrect(ptr)) {
     return false;
   }
-  for (const auto& child : ptr->children) {
-    if (!IsLinkWithChildCorrect(ptr, child.get())) return false;
+  for (const auto &child : ptr->children) {
+    if (!IsLinkWithChildCorrect(ptr, child.get())) {
+      return false;
+    }
   }
-  for (const auto& child : ptr->children) {
-    if (!IsStateCorrect(child.get())) return false;
+  for (const auto &child : ptr->children) {
+    if (!IsStateCorrect(child.get()))
+      return false;
   }
   return true;
 }
@@ -123,7 +138,7 @@ bool BPlusTree::Insert(KeyType key) {
     return false;
   }
 
-  Node* leaf = FindLeafWithKey(key);
+  Node *leaf = FindLeafWithKey(key);
   assert(leaf != nullptr);
 
   InsertKeyInNode(leaf, key);
@@ -137,7 +152,7 @@ bool BPlusTree::Insert(KeyType key) {
 }
 
 bool BPlusTree::Delete(KeyType key) {
-  Node* leaf = FindLeafWithKey(key);
+  Node *leaf = FindLeafWithKey(key);
   if (!leaf || !IsKeyInNode(leaf, key)) {
     return false;
   }
@@ -147,9 +162,9 @@ bool BPlusTree::Delete(KeyType key) {
   return true;
 }
 
-void BPlusTree::Split(Node* old_node) {
+void BPlusTree::Split(Node *old_node) {
   assert(old_node != nullptr);
-  Node* parent = old_node->parent;
+  Node *parent = old_node->parent;
   auto new_left_node = std::make_unique<Node>();
   auto new_right_node = std::make_unique<Node>();
 
@@ -170,24 +185,24 @@ void BPlusTree::Split(Node* old_node) {
     Link(new_right_node.get(), old_node->right);
 
   } else {
-    detail::AssignLeftHalf(&old_node->children, &new_left_node->children);
-    detail::AssignRightHalf(&old_node->children, &new_right_node->children);
+    Detail::AssignLeftHalf(&old_node->children, &new_left_node->children);
+    Detail::AssignRightHalf(&old_node->children, &new_right_node->children);
 
     UpdateParent(new_left_node->children, new_left_node.get());
     UpdateParent(new_right_node->children, new_right_node.get());
 
-    old_node->keys.erase(old_node->keys.begin() + pos_of_central_key);
+    old_node->keys.erase(old_node->keys.begin() +
+                         static_cast<long>(pos_of_central_key));
   }
   InsertKeyInNode(parent, central_key);
 
-  detail::AssignLeftHalf(&old_node->keys, &new_left_node->keys);
-  detail::AssignRightHalf(&old_node->keys, &new_right_node->keys);
+  Detail::AssignLeftHalf(&old_node->keys, &new_left_node->keys);
+  Detail::AssignRightHalf(&old_node->keys, &new_right_node->keys);
 
-  auto iter_pos_in_children =
-      std::find_if(parent->children.begin(), parent->children.end(),
-                   [old_node](const std::unique_ptr<Node>& lhs) {
-                     return lhs.get() == old_node;
-                   });
+  auto iter_pos_in_children = std::ranges::find_if(
+      parent->children, [old_node](const std::unique_ptr<Node> &lhs) {
+        return lhs.get() == old_node;
+      });
 
   new_left_node->parent = parent;
   new_right_node->parent = parent;
@@ -202,23 +217,23 @@ void BPlusTree::Split(Node* old_node) {
 }
 
 bool BPlusTree::FindKey(KeyType key) {
-  const Node* node_with_key = FindLeafWithKey(key);
+  const Node *node_with_key = FindLeafWithKey(key);
   assert(node_with_key != nullptr);
   return IsKeyInNode(node_with_key, key);
 }
 
-void BPlusTree::InsertKeyInNode(Node* node, KeyType key) {
+void BPlusTree::InsertKeyInNode(Node *node, KeyType key) {
   assert(node);
   assert(!IsKeyInNode(node, key));
-  auto iter = std::lower_bound(node->keys.begin(), node->keys.end(), key);
+  auto iter = std::ranges::lower_bound(node->keys, key);
   node->keys.insert(iter, key);
 }
 
-detail::Node* BPlusTree::FindLeafWithKey(KeyType key) {
+Detail::Node *BPlusTree::FindLeafWithKey(KeyType key) {
   return FindLeafWithKeyFromNode(key, root_.get());
 }
 
-detail::Node* BPlusTree::FindLeafWithKeyFromNode(KeyType key, Node* node) {
+Detail::Node *BPlusTree::FindLeafWithKeyFromNode(KeyType key, Node *node) {
   if (root_ == nullptr) {
     return nullptr;
   }
@@ -227,16 +242,16 @@ detail::Node* BPlusTree::FindLeafWithKeyFromNode(KeyType key, Node* node) {
     return node;
   }
 
-  auto iter = std::upper_bound(node->keys.begin(), node->keys.end(), key);
+  auto iter = std::ranges::upper_bound(node->keys, key);
   size_t num_of_child_with_key = std::distance(node->keys.begin(), iter);
-  Node* child_with_key = node->children[num_of_child_with_key].get();
+  Node *child_with_key = node->children[num_of_child_with_key].get();
 
   return FindLeafWithKeyFromNode(key, child_with_key);
 }
 
-void BPlusTree::DeleteInNode(Node* node, KeyType key) {
+void BPlusTree::DeleteInNode(Node *node, KeyType key) {
   assert(node != nullptr);
-  auto iter = detail::FindIterOfKey(node->keys, key);
+  auto iter = Detail::FindIterOfKey(*node, key);
   assert(iter != node->keys.end());
   node->keys.erase(iter);
 
@@ -262,9 +277,9 @@ void BPlusTree::DeleteInNode(Node* node, KeyType key) {
   }
 }
 
-void BPlusTree::BorrowFromLeft(Node* node, KeyType prev_key) {
+void BPlusTree::BorrowFromLeft(Node *node, KeyType prev_key) {
   assert(node != nullptr);
-  Node* left_sibling = LeftSibling(node);
+  Node *left_sibling = LeftSibling(node);
 
   assert(!left_sibling->keys.empty());
   node->keys.insert(node->keys.begin(), left_sibling->keys.back());
@@ -282,9 +297,9 @@ void BPlusTree::BorrowFromLeft(Node* node, KeyType prev_key) {
   UpdateKeys(node, prev_key, new_key);
 }
 
-void BPlusTree::BorrowFromRight(Node* node) {
+void BPlusTree::BorrowFromRight(Node *node) {
   assert(node != nullptr);
-  Node* right_sibling = RightSibling(node);
+  Node *right_sibling = RightSibling(node);
 
   assert(!right_sibling->keys.empty());
   node->keys.push_back(right_sibling->keys.front());
@@ -302,15 +317,15 @@ void BPlusTree::BorrowFromRight(Node* node) {
   UpdateKeys(node, prev_key, new_key);
 }
 
-void BPlusTree::Merge(Node* node, KeyType key_of_node_in_parent) {
+void BPlusTree::Merge(Node *node, KeyType key_of_node_in_parent) {
   assert(node != nullptr);
-  Node* left_sibling = LeftSibling(node);
-  Node* right_sibling = RightSibling(node);
-  Node* parent = node->parent;
+  Node *left_sibling = LeftSibling(node);
+  Node *right_sibling = RightSibling(node);
+  Node *parent = node->parent;
 
-  auto iter = std::find_if(
-      parent->children.begin(), parent->children.end(),
-      [node](const std::unique_ptr<Node>& lhs) { return lhs.get() == node; });
+  auto iter = std::ranges::find_if(
+      parent->children,
+      [node](const std::unique_ptr<Node> &lhs) { return lhs.get() == node; });
   assert(iter != parent->children.end());
   std::unique_ptr<Node> deleted_node = std::move(*iter);
   parent->children.erase(iter);
@@ -367,21 +382,23 @@ void BPlusTree::Merge(Node* node, KeyType key_of_node_in_parent) {
   }
 }
 
-void BPlusTree::UpdateKeys(Node* node, KeyType prev_key, KeyType new_key) {
+void BPlusTree::UpdateKeys(Node *node, KeyType prev_key, KeyType new_key) {
   assert(node != nullptr);
   if (node->parent == nullptr) {
     return;
   }
 
   node = node->parent;
-  auto iter = std::lower_bound(node->keys.begin(), node->keys.end(), prev_key);
+  auto iter = std::ranges::lower_bound(node->keys, prev_key);
   while (iter != node->keys.end() && *iter == prev_key) {
     *iter = new_key;
     node = node->parent;
     if (node != nullptr) {
-      iter = std::lower_bound(node->keys.begin(), node->keys.end(), prev_key);
+      iter = std::ranges::lower_bound(node->keys, prev_key);
     } else {
       return;
     }
   }
 }
+
+}  // namespace BPTree

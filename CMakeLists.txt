@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.27)
-set(CMAKE_CXX_COMPILER "clang++-18")
 
 project(B_plus_tree_visualization)
 
@@ -12,5 +11,9 @@ include_directories(source)
 add_executable(
         B_plus_tree_visualization
         source/BPlusTree.cpp
+        source/GeomTree.cpp
+        source/Iterator.cpp
+        source/GeomModel.cpp
+
         source/test.cpp
 )
