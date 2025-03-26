@@ -152,7 +152,8 @@ class CObservable {
   }
   void subscribe(CObserver* obs) {
     assert(obs);
-    if (obs->isSubscribed()) obs->unsubscribe();
+    if (obs->isSubscribed())
+      obs->unsubscribe();
     Listeners_.push_back(obs);
     obs->setObservable(this);
     obs->onSubscribe_(Data_());
@@ -173,7 +174,8 @@ class CObservable {
 
 template <class TData, class TSendBy>
 void CObserver<TData, TSendBy>::unsubscribe() {
-  if (!isSubscribed()) return;
+  if (!isSubscribed())
+    return;
   Observable_->detach_(this);
   Observable_ = nullptr;
 }
@@ -258,7 +260,8 @@ class CObservable<void, void> {
   }
   void subscribe(CObserver* obs) {
     assert(obs);
-    if (obs->isSubscribed()) obs->unsubscribe();
+    if (obs->isSubscribed())
+      obs->unsubscribe();
     Listeners_.push_back(obs);
     obs->setObservable(this);
     obs->onSubscribe_();
@@ -277,7 +280,8 @@ class CObservable<void, void> {
 };
 
 inline void CObserver<void, void>::unsubscribe() {
-  if (!isSubscribed()) return;
+  if (!isSubscribed())
+    return;
   Observable_->detach_(this);
   Observable_ = nullptr;
 }

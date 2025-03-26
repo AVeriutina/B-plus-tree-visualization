@@ -12,8 +12,7 @@ add_executable(
         B_plus_tree_visualization
         source/BPlusTree.cpp
         source/GeomTree.cpp
-        source/Iterator.cpp
+        source/IteratorBPTree.cpp
         source/GeomModel.cpp
-
-        source/test.cpp
+        source/main.cpp
 )

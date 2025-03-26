@@ -1,19 +1,34 @@
 #pragma once
 
-#include "GeomTree.h"
-namespace BPTree::GeomModel {
+#include <memory>
 
-namespace Settings {
-constexpr double WidthKey = 8.;
-constexpr double DistBetweenKeys = 1.;
-constexpr double DistKeyBoard = 1.;
-constexpr double HeightNode = 2 * DistKeyBoard + WidthKey;
-constexpr double HeightBetweenNodes = 3.;
-constexpr double WidthBetweenNodes = 3.;
-}  // namespace Settings
+#include "BPTreeData.h"
+#include "Observer.h"
 
-enum Pallet {
-  // TODO
+namespace BPT::GeomModel {
+
+class GeomBPlusTree;
+
+class GeomModel {
+  using DataFromBPTreeToGeomModel = BPTree::Detail::DataFromBPTree;
+
+  using GeomObservable =
+      NSLibrary::CObservable<std::shared_ptr<const GeomBPlusTree>,
+                             NSLibrary::CByValue>;
+
+  using GeomObserver = NSLibrary::CColdInput<DataFromBPTreeToGeomModel>;
+
+ public:
+  GeomModel(GeomObservable output_port);
+
+  void ActionOnNotify(const BPT::BPTree::Detail::DataFromBPTree& data);
+
+  std::shared_ptr<const GeomBPlusTree> SendData();
+
+ private:
+  GeomObserver input_port_;
+  GeomObservable output_port_;
+  std::shared_ptr<const GeomBPlusTree> temp_tree_;
 };
 
-}  // namespace BPTree::GeomModel
+}  // namespace BPT::GeomModel

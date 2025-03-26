@@ -7,7 +7,9 @@
 #include <iterator>
 #include <memory>
 
-namespace BPTree {
+#include "IteratorBPTree.h"
+
+namespace BPT::BPTree {
 
 namespace Detail {
 
@@ -24,7 +26,6 @@ Node *LeftSibling(Node *node) {
   }
   auto iter_of_right = std::ranges::find_if(
       parent->children,
-
       [node](const std::unique_ptr<Node> &lhs) { return lhs.get() == node; });
   assert(iter_of_right != parent->children.end());
   if (iter_of_right == parent->children.begin()) {
@@ -33,16 +34,16 @@ Node *LeftSibling(Node *node) {
   return (*(iter_of_right - 1)).get();
 }
 
-Node *RightSibling(Node *node) {
-  assert(node);
-  const Node *parent = node->parent;
+Node *RightSibling(Node *left_sibling) {
+  assert(left_sibling);
+  const Node *parent = left_sibling->parent;
   if (parent == nullptr) {
     return nullptr;
   }
   auto iter_of_left = std::ranges::find_if(
-      parent->children,
-
-      [node](const std::unique_ptr<Node> &lhs) { return lhs.get() == node; });
+      parent->children, [left_sibling](const std::unique_ptr<Node> &lhs) {
+        return lhs.get() == left_sibling;
+      });
   assert(iter_of_left != parent->children.end());
   if (iter_of_left == parent->children.end() - 1) {
     return nullptr;
@@ -102,14 +103,27 @@ Node *GetLastChild(Node *node) {
 
 }  // namespace Detail
 
-BPlusTree::BPlusTree(int32_t max_degree) {
+BPlusTree::BPlusTree() : port_([this]() { return GetData(); }) {}
+
+void BPlusTree::SetDegree(int32_t max_degree) {
   assert(max_degree > 1);
+  Clear();
   max_degree_ = max_degree;
+}
+
+void BPlusTree::Clear() {
+  if (root_) {
+    root_ = nullptr;
+  }
+  max_degree_ = 0;
 }
 
 bool BPlusTree::IsStateCorrect(Node *ptr) {
   if (ptr == nullptr) {
     return true;
+  }
+  if (max_degree_ <= 1) {
+    return false;
   }
   if (!IsNodeStateCorrect(ptr)) {
     return false;
@@ -120,8 +134,9 @@ bool BPlusTree::IsStateCorrect(Node *ptr) {
     }
   }
   for (const auto &child : ptr->children) {
-    if (!IsStateCorrect(child.get()))
+    if (!IsStateCorrect(child.get())) {
       return false;
+    }
   }
   return true;
 }
@@ -142,6 +157,8 @@ bool BPlusTree::Insert(KeyType key) {
   assert(leaf != nullptr);
 
   InsertKeyInNode(leaf, key);
+  statuses_.clear();
+  port_.notify();
 
   if (leaf->keys.size() >= max_degree_) {
     Split(leaf);
@@ -157,6 +174,7 @@ bool BPlusTree::Delete(KeyType key) {
     return false;
   }
 
+  statuses_.clear();
   DeleteInNode(leaf, key);
   assert(IsStateCorrect(root_.get()));
   return true;
@@ -211,12 +229,16 @@ void BPlusTree::Split(Node *old_node) {
   *iter_pos_in_children = std::move(new_left_node);
   parent->children.insert(iter_pos_in_children + 1, std::move(new_right_node));
 
+  statuses_.clear();
+  port_.notify();
+
   if (parent->keys.size() >= max_degree_) {
     Split(parent);
   }
 }
 
 bool BPlusTree::FindKey(KeyType key) {
+  statuses_.clear();
   const Node *node_with_key = FindLeafWithKey(key);
   assert(node_with_key != nullptr);
   return IsKeyInNode(node_with_key, key);
@@ -239,12 +261,21 @@ Detail::Node *BPlusTree::FindLeafWithKeyFromNode(KeyType key, Node *node) {
   }
   assert(node != nullptr);
   if (IsLeaf(node)) {
+    statuses_.clear();
+    statuses_[Iterator(node)] = Status::Found;
+    port_.notify();
     return node;
   }
+
+  statuses_.clear();
+  statuses_[Iterator(node)] = Status::Found;
 
   auto iter = std::ranges::upper_bound(node->keys, key);
   size_t num_of_child_with_key = std::distance(node->keys.begin(), iter);
   Node *child_with_key = node->children[num_of_child_with_key].get();
+
+  statuses_[Iterator(child_with_key)] = Status::Search;
+  port_.notify();
 
   return FindLeafWithKeyFromNode(key, child_with_key);
 }
@@ -255,16 +286,26 @@ void BPlusTree::DeleteInNode(Node *node, KeyType key) {
   assert(iter != node->keys.end());
   node->keys.erase(iter);
 
+  port_.notify();
+
   if (node == root_.get()) {
     return;
   }
 
   if (node->keys.size() < (max_degree_ / 2)) {
+    statuses_[Iterator(node)] = Status::Unity;
+
     if (LeftSibling(node) &&
         LeftSibling(node)->keys.size() > (max_degree_ / 2)) {
+      statuses_[Iterator(LeftSibling(node))] = Status::Unity;
+      port_.notify();
+
       BorrowFromLeft(node, key);
     } else if (RightSibling(node) &&
                RightSibling(node)->keys.size() > (max_degree_ / 2)) {
+      statuses_[Iterator(RightSibling(node))] = Status::Unity;
+      port_.notify();
+
       BorrowFromRight(node);
     } else {
       KeyType key_of_node_in_parent = key;
@@ -275,6 +316,9 @@ void BPlusTree::DeleteInNode(Node *node, KeyType key) {
       Merge(node, key_of_node_in_parent);
     }
   }
+
+  statuses_.clear();
+  port_.notify();
 }
 
 void BPlusTree::BorrowFromLeft(Node *node, KeyType prev_key) {
@@ -331,6 +375,9 @@ void BPlusTree::Merge(Node *node, KeyType key_of_node_in_parent) {
   parent->children.erase(iter);
 
   if (left_sibling) {
+    statuses_[Iterator(left_sibling)] = Status::Unity;
+    port_.notify();
+
     if (IsLeaf(node)) {
       Link(left_sibling, node);
     } else {
@@ -355,6 +402,9 @@ void BPlusTree::Merge(Node *node, KeyType key_of_node_in_parent) {
       node->parent = nullptr;
     }
   } else if (right_sibling) {
+    statuses_[Iterator(right_sibling)] = Status::Unity;
+    port_.notify();
+
     if (IsLeaf(node)) {
       Link(node, right_sibling);
     } else {
@@ -401,4 +451,8 @@ void BPlusTree::UpdateKeys(Node *node, KeyType prev_key, KeyType new_key) {
   }
 }
 
-}  // namespace BPTree
+Detail::DataFromBPTree BPlusTree::GetData() {
+  return {.iter = Detail::Iterator(root_.get()), .statuses = statuses_};
+}
+
+}  // namespace BPT::BPTree

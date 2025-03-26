@@ -1,13 +1,26 @@
 #pragma once
+#include <cstddef>
+#include <functional>
 
-#include "BPlusTree.h"
+#include "BPTreeNode.h"
 
-namespace BPTree::Detail {
+namespace BPT::BPTree::Detail {
+class Iterator;
+}
+
+template <>
+struct std::hash<BPT::BPTree::Detail::Iterator> {
+  std::size_t operator()(const BPT::BPTree::Detail::Iterator &lhs) const;
+};
+
+namespace BPT::BPTree::Detail {
 struct IteratorChild;
 
 class Iterator {
+  friend std::hash<Iterator>;
+
  public:
-  Iterator(Node *node) : node_(node) {}
+  Iterator(Node *node);
 
   bool IsValid() const;
   bool HasParent() const;
@@ -43,4 +56,4 @@ IteratorChild &operator++(IteratorChild &iter);
 IteratorChild &operator--(IteratorChild &iter);
 Iterator &operator*(IteratorChild &iter);
 
-}  // namespace BPTree::Detail
+}  // namespace BPT::BPTree::Detail

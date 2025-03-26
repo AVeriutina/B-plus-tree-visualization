@@ -1,10 +1,17 @@
-#include "Iterator.h"
+#include "IteratorBPTree.h"
 
 #include <cassert>
 
-#include "BPlusTree.h"
+#include "BPTreeNode.h"
 
-namespace BPTree::Detail {
+std::size_t std::hash<BPT::BPTree::Detail::Iterator>::operator()(
+    const BPT::BPTree::Detail::Iterator &lhs) const {
+  return std::hash<BPT::BPTree::Detail::Node *>{}(lhs.node_);
+}
+
+namespace BPT::BPTree::Detail {
+
+Iterator::Iterator(Node *node) : node_(node) {}
 
 bool Iterator::IsValid() const { return node_ != nullptr; }
 
@@ -90,4 +97,4 @@ IteratorChild &operator--(IteratorChild &iter) {
 
 Iterator &operator*(IteratorChild &iter) { return iter.value; }
 
-}  // namespace BPTree::Detail
+}  // namespace BPT::BPTree::Detail
