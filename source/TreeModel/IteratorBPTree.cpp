@@ -75,7 +75,7 @@ bool operator==(const IteratorChild &lhs, const IteratorChild &rhs) {
 }
 
 IteratorChild &operator++(IteratorChild &iter) {
-  assert(iter.is_end);
+  assert(!iter.is_end);
   if (!iter.value.HasRightSibling()) {
     iter.is_end = true;
     return iter;
@@ -85,7 +85,6 @@ IteratorChild &operator++(IteratorChild &iter) {
 }
 
 IteratorChild &operator--(IteratorChild &iter) {
-  assert(iter.is_end);
   assert(iter.value.HasLeftSibling());
 
   if (iter.is_end) {

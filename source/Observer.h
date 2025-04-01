@@ -76,13 +76,13 @@ class CObserver {
   using CData = TData;
   using CSendBy = TSendBy;
 
-  using CObservable = CObservable<CData, CSendBy>;
+  using Observable = CObservable<CData, CSendBy>;
 
   using CDataSentBy = NSObserverDetail::CDataSentBy<CData, CSendBy>;
   using CSignature = void(CDataSentBy);
   using CAction = std::function<CSignature>;
 
-  friend CObservable;
+  friend Observable;
 
  public:
   using CArg = CDataSentBy;
@@ -108,12 +108,12 @@ class CObserver {
   static void doNothing(CDataSentBy) {}
 
  private:
-  void setObservable(CObservable* observable) {
+  void setObservable(Observable* observable) {
     assert(observable);
     Observable_ = observable;
   }
 
-  CObservable* Observable_ = nullptr;
+  Observable* Observable_ = nullptr;
   CAction onSubscribe_;
   CAction onNotify_;
   CAction onUnsubscribe_;
@@ -124,16 +124,16 @@ class CObservable {
   using CData = TData;
   using CSendBy = TSendBy;
 
-  using CObserver = CObserver<CData, CSendBy>;
-  using CObserversContainer = std::list<CObserver*>;
+  using Observer = CObserver<CData, CSendBy>;
+  using CObserversContainer = std::list<Observer*>;
 
   using CDataSentBy = NSObserverDetail::CDataSentBy<CData, CSendBy>;
   using CSignature = CDataSentBy();
   using CGetAction = std::function<CSignature>;
 
-  using CListeners = std::list<CObserver*>;
+  using CListeners = std::list<Observer*>;
 
-  friend CObserver;
+  friend Observer;
 
  public:
   using CReturn = CDataSentBy;
@@ -148,24 +148,22 @@ class CObservable {
   CObservable& operator=(CObservable&&) noexcept = delete;
   ~CObservable() { unsubscribeAll(); }
   void notify() const {
-    for (CObserver* obs : Listeners_) obs->onNotify_(Data_());
+    for (Observer* obs : Listeners_) obs->onNotify_(Data_());
   }
-  void subscribe(CObserver* obs) {
+  void subscribe(Observer* obs) {
     assert(obs);
     if (obs->isSubscribed())
       obs->unsubscribe();
     Listeners_.push_back(obs);
     obs->setObservable(this);
-    obs->onSubscribe_(Data_());
   }
   void unsubscribeAll() {
     while (!Listeners_.empty()) Listeners_.front()->unsubscribe();
   }
 
  private:
-  void detach_(CObserver* obs) {
+  void detach_(Observer* obs) {
     assert(obs);
-    obs->onUnsubscribe_(Data_());
     Listeners_.remove(obs);
   }
   CGetAction Data_;
@@ -192,12 +190,12 @@ class CObserver<void, void> {
   using CData = void;
   using CSendBy = void;
 
-  using CObservable = CObservable<CData, CSendBy>;
+  using Observable = CObservable<CData, CSendBy>;
 
   using CSignature = void();
   using CAction = std::function<CSignature>;
 
-  friend CObservable;
+  friend Observable;
 
  public:
   using CArg = void;
@@ -222,12 +220,12 @@ class CObserver<void, void> {
   static void doNothing() {}
 
  private:
-  void setObservable(CObservable* observable) {
+  void setObservable(Observable* observable) {
     assert(observable);
     Observable_ = observable;
   }
 
-  CObservable* Observable_ = nullptr;
+  Observable* Observable_ = nullptr;
   CAction onSubscribe_;
   CAction onNotify_;
   CAction onUnsubscribe_;
@@ -238,13 +236,13 @@ class CObservable<void, void> {
   using CData = void;
   using CSendBy = void;
 
-  using CObserver = CObserver<CData, CSendBy>;
-  using CObserversContainer = std::list<CObserver*>;
+  using Observer = CObserver<CData, CSendBy>;
+  using CObserversContainer = std::list<Observer*>;
 
   using CDataSentBy = void;
-  using CListeners = std::list<CObserver*>;
+  using CListeners = std::list<Observer*>;
 
-  friend CObserver;
+  friend Observer;
 
  public:
   using CReturn = CDataSentBy;
@@ -256,9 +254,9 @@ class CObservable<void, void> {
   CObservable& operator=(CObservable&&) noexcept = delete;
   ~CObservable() { unsubscribeAll(); }
   void notify() const {
-    for (CObserver* obs : Listeners_) obs->onNotify_();
+    for (Observer* obs : Listeners_) obs->onNotify_();
   }
-  void subscribe(CObserver* obs) {
+  void subscribe(Observer* obs) {
     assert(obs);
     if (obs->isSubscribed())
       obs->unsubscribe();
@@ -271,7 +269,7 @@ class CObservable<void, void> {
   }
 
  private:
-  void detach_(CObserver* obs) {
+  void detach_(Observer* obs) {
     assert(obs);
     obs->onUnsubscribe_();
     Listeners_.remove(obs);
@@ -313,14 +311,14 @@ class CObservableMono : protected CObservable<TData, TSendBy> {
 
   using CBase = CObservable<CData, CSendBy>;
 
-  using CObserver = CObserver<CData, CSendBy>;
+  using Observer = CObserver<CData, CSendBy>;
 
  public:
   using CBase::CBase;
 
   using CBase::notify;
 
-  void subscribe(CObserver* obs) {
+  void subscribe(Observer* obs) {
     CBase::unsubscribeAll();
     CBase::subscribe(obs);
   }

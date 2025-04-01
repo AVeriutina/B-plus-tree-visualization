@@ -5,13 +5,16 @@
 #include <cstdint>
 
 #include "BPTreeData.h"
+#include "BPTreeNode.h"
 #include "Observer.h"
+
+namespace BPT {
+class GeomModel;
+}
 
 namespace BPT::BPTree {
 
 namespace Detail {
-
-struct Node;
 class Iterator;
 }  // namespace Detail
 
@@ -26,22 +29,22 @@ class BPlusTree {
   static constexpr auto LeftSibling = Detail::LeftSibling;
   static constexpr auto RightSibling = Detail::RightSibling;
   static constexpr auto IsKeyInNode = Detail::IsKeyInNode;
-  static constexpr auto Link = Detail::Link;
+  static constexpr auto LinkSiblings = Detail::LinkSiblings;
   static constexpr auto UpdateParent = Detail::UpdateParent;
   static constexpr auto IsNodeStateCorrect = Detail::IsNodeStateCorrect;
-  static constexpr auto IsLinkWithChildCorrect = Detail::IsLinkWithChildCorrect;
+  static constexpr auto IsParentForNode = Detail::IsParentForNode;
 
  public:
   BPlusTree();
 
-  void SetDegree(int32_t max_degree);
+  void SetDegree(int64_t max_degree);
   bool FindKey(KeyType key);
   bool Insert(KeyType key);
   bool Delete(KeyType key);
+  void Reset();
+  void SubscribeGeomModel(GeomModel *geom_model_);
 
  private:
-  void Clear();
-  bool IsStateCorrect(Node *ptr);
   void InsertKeyInNode(Node *node, KeyType key);
   void Split(Node *old_node);
   Node *FindLeafWithKey(KeyType key);
@@ -51,12 +54,14 @@ class BPlusTree {
   void BorrowFromRight(Node *node);
   void Merge(Node *node, KeyType key_of_node_in_parent);
   void UpdateKeys(Node *node, KeyType prev_key, KeyType new_key);
-  Data GetData();
+  Data GetData() const;
 
-  size_t max_degree_ = 0;
+  bool IsStateCorrect(Node *node) const;
+
+  size_t max_degree_ = 3;
   std::unique_ptr<Node> root_ = nullptr;
-  Observable port_;
   std::unordered_map<Iterator, Detail::Status> statuses_;
+  Observable port_;
 };
 
 }  // namespace BPT::BPTree

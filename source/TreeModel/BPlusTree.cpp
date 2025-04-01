@@ -7,138 +7,19 @@
 #include <iterator>
 #include <memory>
 
+#include "BPTreeData.h"
+#include "GeomModel.h"
 #include "IteratorBPTree.h"
+#include "Observer.h"
 
 namespace BPT::BPTree {
 
-namespace Detail {
-
-bool IsLeaf(const Node *node) {
-  assert(node != nullptr);
-  return node->children.empty();
-}
-
-Node *LeftSibling(Node *node) {
-  assert(node);
-  const Node *parent = node->parent;
-  if (parent == nullptr) {
-    return nullptr;
-  }
-  auto iter_of_right = std::ranges::find_if(
-      parent->children,
-      [node](const std::unique_ptr<Node> &lhs) { return lhs.get() == node; });
-  assert(iter_of_right != parent->children.end());
-  if (iter_of_right == parent->children.begin()) {
-    return nullptr;
-  }
-  return (*(iter_of_right - 1)).get();
-}
-
-Node *RightSibling(Node *left_sibling) {
-  assert(left_sibling);
-  const Node *parent = left_sibling->parent;
-  if (parent == nullptr) {
-    return nullptr;
-  }
-  auto iter_of_left = std::ranges::find_if(
-      parent->children, [left_sibling](const std::unique_ptr<Node> &lhs) {
-        return lhs.get() == left_sibling;
-      });
-  assert(iter_of_left != parent->children.end());
-  if (iter_of_left == parent->children.end() - 1) {
-    return nullptr;
-  }
-  return (*(iter_of_left + 1)).get();
-}
-
-bool IsKeyInNode(const Node *node, KeyType key) {
-  assert(node != nullptr);
-  return std::ranges::binary_search(node->keys, key);
-}
-
-auto FindIterOfKey(const Node &node, KeyType key) {
-  auto iter = std::ranges::lower_bound(node.keys, key);
-  assert(iter != node.keys.end() && *iter == key);
-  return iter;
-}
-
-void Link(Node *left_node, Node *right_node) {
-  if (left_node) {
-    left_node->right = right_node;
-  }
-  if (right_node) {
-    right_node->left = left_node;
-  }
-}
-
-void UpdateParent(const std::vector<std::unique_ptr<Node>> &children,
-                  Node *new_parant) {
-  for (const auto &child : children) {
-    child->parent = new_parant;
-  }
-}
-
-bool IsNodeStateCorrect(Node *node) {
-  if (!IsLeaf(node)) {
-    return node->keys.size() + 1 == node->children.size();
-  }
-  return true;
-}
-
-bool IsLinkWithChildCorrect(Node *parent, Node *child) {
-  return child->parent == parent;
-}
-
-Node *GetFistChild(Node *node) {
-  assert(node);
-  assert(!IsLeaf(node));
-  return node->children.front().get();
-}
-
-Node *GetLastChild(Node *node) {
-  assert(node);
-  assert(!IsLeaf(node));
-  return node->children.back().get();
-}
-
-}  // namespace Detail
-
 BPlusTree::BPlusTree() : port_([this]() { return GetData(); }) {}
 
-void BPlusTree::SetDegree(int32_t max_degree) {
-  assert(max_degree > 1);
-  Clear();
+void BPlusTree::SetDegree(int64_t max_degree) {
+  assert(max_degree > 2);
+  Reset();
   max_degree_ = max_degree;
-}
-
-void BPlusTree::Clear() {
-  if (root_) {
-    root_ = nullptr;
-  }
-  max_degree_ = 0;
-}
-
-bool BPlusTree::IsStateCorrect(Node *ptr) {
-  if (ptr == nullptr) {
-    return true;
-  }
-  if (max_degree_ <= 1) {
-    return false;
-  }
-  if (!IsNodeStateCorrect(ptr)) {
-    return false;
-  }
-  for (const auto &child : ptr->children) {
-    if (!IsLinkWithChildCorrect(ptr, child.get())) {
-      return false;
-    }
-  }
-  for (const auto &child : ptr->children) {
-    if (!IsStateCorrect(child.get())) {
-      return false;
-    }
-  }
-  return true;
 }
 
 bool BPlusTree::Insert(KeyType key) {
@@ -146,6 +27,10 @@ bool BPlusTree::Insert(KeyType key) {
     root_ = std::make_unique<Node>();
     assert(root_ != nullptr);
     root_->keys.push_back(key);
+
+    statuses_.clear();
+    port_.notify();
+
     return true;
   }
 
@@ -180,6 +65,25 @@ bool BPlusTree::Delete(KeyType key) {
   return true;
 }
 
+void BPlusTree::Reset() {
+  if (root_) {
+    root_ = nullptr;
+  }
+}
+
+void BPlusTree::SubscribeGeomModel(GeomModel *geom_model_) {
+  port_.subscribe(
+      static_cast<NSLibrary::CObserver<Data, NSLibrary::CByValue> *>(
+          geom_model_->GetObserverPort()));
+}
+
+void BPlusTree::InsertKeyInNode(Node *node, KeyType key) {
+  assert(node);
+  assert(!IsKeyInNode(node, key));
+  auto iter = std::ranges::lower_bound(node->keys, key);
+  node->keys.insert(iter, key);
+}
+
 void BPlusTree::Split(Node *old_node) {
   assert(old_node != nullptr);
   Node *parent = old_node->parent;
@@ -198,9 +102,9 @@ void BPlusTree::Split(Node *old_node) {
   KeyType central_key = old_node->keys[pos_of_central_key];
 
   if (IsLeaf(old_node)) {
-    Link(old_node->left, new_left_node.get());
-    Link(new_left_node.get(), new_right_node.get());
-    Link(new_right_node.get(), old_node->right);
+    LinkSiblings(old_node->left, new_left_node.get());
+    LinkSiblings(new_left_node.get(), new_right_node.get());
+    LinkSiblings(new_right_node.get(), old_node->right);
 
   } else {
     Detail::AssignLeftHalf(&old_node->children, &new_left_node->children);
@@ -242,13 +146,6 @@ bool BPlusTree::FindKey(KeyType key) {
   const Node *node_with_key = FindLeafWithKey(key);
   assert(node_with_key != nullptr);
   return IsKeyInNode(node_with_key, key);
-}
-
-void BPlusTree::InsertKeyInNode(Node *node, KeyType key) {
-  assert(node);
-  assert(!IsKeyInNode(node, key));
-  auto iter = std::ranges::lower_bound(node->keys, key);
-  node->keys.insert(iter, key);
 }
 
 Detail::Node *BPlusTree::FindLeafWithKey(KeyType key) {
@@ -379,7 +276,7 @@ void BPlusTree::Merge(Node *node, KeyType key_of_node_in_parent) {
     port_.notify();
 
     if (IsLeaf(node)) {
-      Link(left_sibling, node);
+      LinkSiblings(left_sibling, node);
     } else {
       left_sibling->keys.insert(left_sibling->keys.end(),
                                 key_of_node_in_parent);
@@ -406,7 +303,7 @@ void BPlusTree::Merge(Node *node, KeyType key_of_node_in_parent) {
     port_.notify();
 
     if (IsLeaf(node)) {
-      Link(node, right_sibling);
+      LinkSiblings(node, right_sibling);
     } else {
       assert(!right_sibling->children.empty());
       assert(!right_sibling->children.front()->keys.empty());
@@ -451,8 +348,31 @@ void BPlusTree::UpdateKeys(Node *node, KeyType prev_key, KeyType new_key) {
   }
 }
 
-Detail::DataFromBPTree BPlusTree::GetData() {
+Detail::DataFromBPTree BPlusTree::GetData() const {
   return {.iter = Detail::Iterator(root_.get()), .statuses = statuses_};
+}
+
+bool BPlusTree::IsStateCorrect(Node *node) const {
+  if (node == nullptr) {
+    return true;
+  }
+  if (max_degree_ <= 1) {
+    return false;
+  }
+  if (!IsNodeStateCorrect(node)) {
+    return false;
+  }
+  for (const auto &child : node->children) {
+    if (!IsParentForNode(node, child.get())) {
+      return false;
+    }
+  }
+  for (const auto &child : node->children) {
+    if (!IsStateCorrect(child.get())) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace BPT::BPTree

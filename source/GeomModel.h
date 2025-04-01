@@ -1,34 +1,32 @@
 #pragma once
 
-#include <memory>
-
-#include "BPTreeData.h"
+#include "GeomTree.h"
 #include "Observer.h"
 
-namespace BPT::GeomModel {
+namespace BPT {
 
-class GeomBPlusTree;
+class Animator;
 
 class GeomModel {
-  using DataFromBPTreeToGeomModel = BPTree::Detail::DataFromBPTree;
-
+  using DataFromBPTree = BPTree::Detail::DataFromBPTree;
+  using ConstGeomBPTree = GeomTreeDetail::ConstValue<GeomBPlusTree>;
   using GeomObservable =
-      NSLibrary::CObservable<std::shared_ptr<const GeomBPlusTree>,
-                             NSLibrary::CByValue>;
+      NSLibrary::CObservable<ConstGeomBPTree, NSLibrary::CByValue>;
 
-  using GeomObserver = NSLibrary::CColdInput<DataFromBPTreeToGeomModel>;
+  using GeomObserver =
+      NSLibrary::CColdInput<DataFromBPTree, NSLibrary::CByValue>;
 
  public:
-  GeomModel(GeomObservable output_port);
-
-  void ActionOnNotify(const BPT::BPTree::Detail::DataFromBPTree& data);
-
-  std::shared_ptr<const GeomBPlusTree> SendData();
+  GeomModel();
+  GeomObserver* GetObserverPort();
+  void SubscribeAnimator(Animator* animator);
 
  private:
+  void ActionOnNotify(const DataFromBPTree& data);
+
   GeomObserver input_port_;
   GeomObservable output_port_;
-  std::shared_ptr<const GeomBPlusTree> temp_tree_;
+  ConstGeomBPTree temp_tree_;
 };
 
-}  // namespace BPT::GeomModel
+}  // namespace BPT

@@ -22,12 +22,13 @@ bool IsLeaf(const Node *node);
 Node *LeftSibling(Node *node);
 Node *RightSibling(Node *node);
 bool IsKeyInNode(const Node *node, KeyType key);
-auto FindIterOfKey(const std::vector<KeyType> &kyes, KeyType key);
-void Link(Node *left_node, Node *right_node);
+std::vector<KeyType>::const_iterator FindIterOfKey(const Node &node,
+                                                   KeyType key);
+void LinkSiblings(Node *left_node, Node *right_node);
 void UpdateParent(const std::vector<std::unique_ptr<Node>> &children,
                   Node *new_parent);
 bool IsNodeStateCorrect(Node *node);
-bool IsLinkWithChildCorrect(Node *parent, Node *child);
+bool IsParentForNode(Node *parent, Node *child);
 
 Node *GetFistChild(Node *node);
 Node *GetLastChild(Node *node);

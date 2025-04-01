@@ -22,7 +22,6 @@ class Iterator {
  public:
   Iterator(Node *node);
 
-  bool IsValid() const;
   bool HasParent() const;
   bool IsLeaf() const;
   void MoveToParent();
@@ -35,6 +34,8 @@ class Iterator {
   IteratorChild ChildrenEnd();
   bool operator==(const Iterator &rhs) const = default;
   const std::vector<KeyType> &GetKeys();
+
+  bool IsValid() const;
 
  private:
   Node *node_;

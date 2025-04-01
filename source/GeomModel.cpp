@@ -1,32 +1,31 @@
 #include "GeomModel.h"
 
 #include <cassert>
-#include <memory>
 #include <utility>
 
+#include "Animator.h"
 #include "GeomTree.h"
+#include "Observer.h"
 
-namespace BPT::GeomModel {
+namespace BPT {
 
-GeomModel::GeomModel(GeomObservable output_port)
-    : output_port_([this]() { return SendData(); }),
-      input_port_([this](const DataFromBPTreeToGeomModel& data) {
-        this->ActionOnNotify(data);
-      }) {}
+GeomModel::GeomModel()
+    : output_port_([this]() { return temp_tree_; }),
+      input_port_(
+          [this](const DataFromBPTree& data) { ActionOnNotify(data); }) {}
 
-void GeomModel::ActionOnNotify(const DataFromBPTreeToGeomModel& data) {
-  GeomBPlusTree geom_tree;
-  geom_tree.BuildTree(data);
+GeomModel::GeomObserver* GeomModel::GetObserverPort() { return &input_port_; }
 
-  temp_tree_ = std::make_shared<const GeomBPlusTree>(std::move(geom_tree));
+void GeomModel::SubscribeAnimator(Animator* animator) {
+  output_port_.subscribe(
+      static_cast<NSLibrary::CObserver<ConstGeomBPTree, NSLibrary::CByValue>*>(
+          animator->GetObserverPort()));
+}
+
+void GeomModel::ActionOnNotify(const DataFromBPTree& data) {
+  GeomBPlusTree geom_tree(data);
+  temp_tree_ = ConstGeomBPTree(std::move(geom_tree));
   output_port_.notify();
 }
 
-std::shared_ptr<const GeomBPlusTree> GeomModel::SendData() {
-  assert(temp_tree_);
-  auto send_tree = temp_tree_;
-  temp_tree_ = nullptr;
-  return send_tree;
-}
-
-}  // namespace BPT::GeomModel
+}  // namespace BPT
