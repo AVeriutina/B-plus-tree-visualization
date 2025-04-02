@@ -1,5 +1,7 @@
 #include "Controllers.h"
 
+#include <qtimer.h>
+
 #include <QMessageBox>
 #include <cassert>
 
@@ -16,6 +18,19 @@ void ShowIncorrectInputMessage() {
   error_box.setIcon(QMessageBox::Information);
   error_box.setStandardButtons(QMessageBox::Ok);
   error_box.exec();
+}
+
+bool ShowConfirmationOfAction() {
+  QMessageBox confirmation_box;
+  confirmation_box.setWindowTitle("Confirmation");
+  confirmation_box.setText(
+      "Changing the tree degree will clear the existing tree. Do you want to "
+      "proceed?");
+  confirmation_box.setIcon(QMessageBox::Warning);
+  confirmation_box.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+
+  int result = confirmation_box.exec();
+  return (result == QMessageBox::Ok);
 }
 
 }  // namespace ControllerDetail
@@ -60,8 +75,21 @@ void ControllerClearAndDegree::OnPushButtonClearClicked() {
 }
 
 void ControllerClearAndDegree::OnSpinBoxValueChanged(int new_degree) {
-  clear_scene_();
-  bp_tree_->SetDegree(new_degree);
+  if (ControllerDetail::ShowConfirmationOfAction()) {
+    clear_scene_();
+    bp_tree_->SetDegree(new_degree);
+    previous_degree_ = new_degree;
+  } else {
+    box_degree_->blockSignals(true);
+    box_degree_->setValue(previous_degree_);
+    box_degree_->blockSignals(false);
+  }
+}
+
+ControllerTimer::ControllerTimer(QTimer* timer) : timer_(timer) {}
+
+void ControllerTimer::SetInterval(int msec) {
+  timer_->setInterval(2100 - msec);
 }
 
 }  // namespace BPT

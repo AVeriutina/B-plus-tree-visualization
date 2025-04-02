@@ -1,6 +1,8 @@
 #pragma once
 
 #include <qlineedit.h>
+#include <qobjectdefs.h>
+#include <qslider.h>
 
 #include <QLineEdit>
 #include <QObject>
@@ -54,5 +56,24 @@ class ControllerClearAndDegree : public QObject {
   BPTree::BPlusTree* bp_tree_;
   std::function<void(void)> clear_scene_;
   QSpinBox* box_degree_;
+  int previous_degree_ = 3;
 };
+
+class ControllerTimer : public QObject {
+  Q_OBJECT
+ public:
+  ControllerTimer(QTimer* timer);
+  ControllerTimer(const ControllerTimer&) = delete;
+  ControllerTimer(ControllerTimer&&) = delete;
+  ControllerTimer& operator=(const ControllerTimer&) = delete;
+  ControllerTimer& operator=(ControllerTimer&&) = delete;
+  ~ControllerTimer() = default;
+
+ public slots:
+  void SetInterval(int value);
+
+ private:
+  QTimer* timer_;
+};
+
 }  // namespace BPT

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QObject>
 #include <QTimer>
 #include <queue>
 
@@ -10,7 +11,8 @@ namespace BPT {
 
 class View;
 
-class Animator {
+class Animator : public QObject {
+  Q_OBJECT
   using ConstGeomBPTree = GeomTreeDetail::ConstValue<GeomBPlusTree>;
 
   using AnimatorObservable =
@@ -25,6 +27,10 @@ class Animator {
   Animator();
   AnimatorObserver* GetObserverPort();
   void SubscribeView(View* view);
+  QTimer* GetTimer();
+
+ private slots:
+  void OnTimer();
 
  private:
   void ActionOnNotify(ConstGeomBPTree data);
