@@ -1,5 +1,7 @@
 #include "Application.h"
 
+#include <qobject.h>
+
 #include "Controllers.h"
 
 namespace BPT {
@@ -12,7 +14,8 @@ Application::Application()
       window_(),
       controller1_(&model_, window_.GetKeyEdit()),
       controller2_(&model_, window_.GetSpinBoxDegree(),
-                   view_.FunctionClearScene()) {
+                   view_.FunctionClearScene()),
+      controller3_(animator_.GetTimer()) {
   model_.SubscribeGeomModel(&geom_model_);
   geom_model_.SubscribeAnimator(&animator_);
   animator_.SubscribeView(&view_);
@@ -34,6 +37,8 @@ Application::Application()
   QObject::connect(window_.GetSpinBoxDegree(),
                    QOverload<int>::of(&QSpinBox::valueChanged), &controller2_,
                    &ControllerClearAndDegree::OnSpinBoxValueChanged);
+  QObject::connect(window_.GetSliderSpeed(), &QSlider::valueChanged,
+                   &controller3_, &ControllerTimer::SetInterval);
 }
 
 void Application::Run() { window_.show(); }

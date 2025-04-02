@@ -16,12 +16,16 @@ Iterator::Iterator(Node *node) : node_(node) {}
 bool Iterator::IsValid() const { return node_ != nullptr; }
 
 bool Iterator::HasParent() const {
-  assert(IsValid());
+  if (!IsValid()) {
+    return false;
+  }
   return node_->parent != nullptr;
 }
 
 bool Iterator::IsLeaf() const {
-  assert(IsValid());
+  if (!IsValid()) {
+    return false;
+  }
   return BPTree::Detail::IsLeaf(node_);
 }
 
@@ -31,7 +35,9 @@ void Iterator::MoveToParent() {
 }
 
 bool Iterator::HasRightSibling() const {
-  assert(IsValid());
+  if (!IsValid()) {
+    return false;
+  }
   return BPTree::Detail::RightSibling(node_) != nullptr;
 }
 
@@ -43,7 +49,9 @@ void Iterator::MoveToRightSibling() {
 }
 
 bool Iterator::HasLeftSibling() const {
-  assert(IsValid());
+  if (!IsValid()) {
+    return false;
+  }
   return BPTree::Detail::LeftSibling(node_) != nullptr;
 }
 
@@ -56,44 +64,47 @@ void Iterator::MoveToLeftSibling() {
 
 IteratorChild Iterator::ChildrenBegin() {
   assert(!IsLeaf());
-  return IteratorChild(Iterator(GetFistChild(node_)));
+  return {Iterator(GetFistChild(node_))};
 }
 
 IteratorChild Iterator::ChildrenEnd() {
   assert(!IsLeaf());
-  return IteratorChild(Iterator(BPTree::Detail::GetLastChild(node_)), true);
+  return {Iterator(BPTree::Detail::GetLastChild(node_)), true};
 }
 
-const std::vector<KeyType> &Iterator::GetKeys() { return node_->keys; }
+const std::vector<KeyType> &Iterator::GetKeys() {
+  assert(IsValid());
+  return node_->keys;
+}
 
 IteratorChild begin(Iterator &node) { return node.ChildrenBegin(); }
 
 IteratorChild end(Iterator &node) { return node.ChildrenEnd(); }
 
-bool operator==(const IteratorChild &lhs, const IteratorChild &rhs) {
-  return lhs.value == rhs.value && lhs.is_end == rhs.is_end;
+bool IteratorChild::operator==(const IteratorChild &rhs) {
+  return iter_ == rhs.iter_ && is_end_ == rhs.is_end_;
 }
 
-IteratorChild &operator++(IteratorChild &iter) {
-  assert(!iter.is_end);
-  if (!iter.value.HasRightSibling()) {
-    iter.is_end = true;
-    return iter;
+IteratorChild &IteratorChild::operator++() {
+  assert(!is_end_);
+  if (!iter_.HasRightSibling()) {
+    is_end_ = true;
+    return *this;
   };
-  iter.value.MoveToRightSibling();
-  return iter;
+  iter_.MoveToRightSibling();
+  return *this;
 }
 
-IteratorChild &operator--(IteratorChild &iter) {
-  assert(iter.value.HasLeftSibling());
+IteratorChild &IteratorChild::operator--() {
+  assert(iter_.HasLeftSibling());
 
-  if (iter.is_end) {
-    iter.is_end = false;
+  if (is_end_) {
+    is_end_ = false;
   };
-  iter.value.MoveToLeftSibling();
-  return iter;
+  iter_.MoveToLeftSibling();
+  return *this;
 }
 
-Iterator &operator*(IteratorChild &iter) { return iter.value; }
+Iterator &IteratorChild::operator*() { return iter_; }
 
 }  // namespace BPT::BPTree::Detail

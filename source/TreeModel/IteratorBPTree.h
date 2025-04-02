@@ -44,17 +44,19 @@ class Iterator {
 IteratorChild begin(Iterator &node);
 IteratorChild end(Iterator &node);
 
-struct IteratorChild {
-  explicit IteratorChild(Iterator iter_node, bool is_end = false)
-      : value(iter_node), is_end(is_end) {}
+class IteratorChild {
+ public:
+  IteratorChild(Iterator iter_node, bool is_end = false)
+      : iter_(iter_node), is_end_(is_end) {}
 
-  Iterator value;
-  bool is_end;
+  bool operator==(const IteratorChild &rhs);
+  IteratorChild &operator++();
+  IteratorChild &operator--();
+  Iterator &operator*();
+
+ private:
+  Iterator iter_;
+  bool is_end_;
 };
-
-bool operator==(const IteratorChild &lhs, const IteratorChild &rhs);
-IteratorChild &operator++(IteratorChild &iter);
-IteratorChild &operator--(IteratorChild &iter);
-Iterator &operator*(IteratorChild &iter);
 
 }  // namespace BPT::BPTree::Detail

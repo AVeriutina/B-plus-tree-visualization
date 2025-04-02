@@ -28,6 +28,7 @@ class Application {
   MainWindow window_;
   ControllerInsertFindDelete controller1_;
   ControllerClearAndDegree controller2_;
+  ControllerTimer controller3_;
 };
 
 }  // namespace BPT
