@@ -1,7 +1,5 @@
 #include "Controllers.h"
 
-#include <qtimer.h>
-
 #include <QMessageBox>
 #include <cassert>
 
@@ -64,19 +62,14 @@ void ControllerInsertFindDelete::PushButtonClicked(
   }
 }
 
-ControllerClearAndDegree::ControllerClearAndDegree(
-    BPTree::BPlusTree* bp_tree, QSpinBox* box_degree,
-    std::function<void(void)> clear_scene)
-    : bp_tree_(bp_tree), box_degree_(box_degree), clear_scene_(clear_scene) {}
+ControllerClearAndDegree::ControllerClearAndDegree(BPTree::BPlusTree* bp_tree,
+                                                   QSpinBox* box_degree)
+    : bp_tree_(bp_tree), box_degree_(box_degree) {}
 
-void ControllerClearAndDegree::OnPushButtonClearClicked() {
-  clear_scene_();
-  bp_tree_->Reset();
-}
+void ControllerClearAndDegree::OnPushButtonClearClicked() { bp_tree_->Reset(); }
 
 void ControllerClearAndDegree::OnSpinBoxValueChanged(int new_degree) {
   if (ControllerDetail::ShowConfirmationOfAction()) {
-    clear_scene_();
     bp_tree_->SetDegree(new_degree);
     previous_degree_ = new_degree;
   } else {

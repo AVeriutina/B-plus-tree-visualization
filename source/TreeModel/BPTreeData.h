@@ -10,7 +10,8 @@ class Iterator;
 enum class Status {
   Search,
   Found,
-  Unity,
+  NotFound,
+  IntermediateState,
 };
 
 struct DataFromBPTree {

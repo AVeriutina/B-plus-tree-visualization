@@ -1,12 +1,7 @@
 #include "View.h"
 
-#include <qcolor.h>
-#include <qgraphicsscene.h>
-#include <qnamespace.h>
-#include <qpoint.h>
-
+#include <QColor>
 #include <cassert>
-#include <cstddef>
 
 #include "GeomTree.h"
 
@@ -28,6 +23,8 @@ QColor ConvertMyColorToQColor(const MyColor& clr) {
       return QColor(255, 182, 193);
     case MyColor::Orange:
       return QColor(255, 204, 153);
+    case MyColor::White:
+      return Qt::white;
     default:
       return Qt::black;
   }
@@ -43,10 +40,6 @@ View::View()
 View::ViewObserver* View::GetObserverPort() { return &input_port_; }
 
 QGraphicsScene* View::GetScene() { return &scene_; }
-
-std::function<void(void)> View::FunctionClearScene() {
-  return [this]() { scene_.clear(); };
-}
 
 QPointF View::ConvertMyPointToQPoint(const GeomTreePoint& point) {
   return QPointF(point.x, point.y) + offset_for_centering_;
@@ -84,15 +77,16 @@ void View::DrawOneNode(const GeomNode& geom_node) {
 
 void View::DrawTree(ConstGeomBPTree data) {
   scene_.clear();
-
-  assert(data->GetDataOfTree().root);
+  if (!data->GetDataOfTree().root) {
+    return;
+  }
   CalcOffset(data->GetDataOfTree().lower_right_point_of_tree_);
   DrawSubTree(*data->GetDataOfTree().root);
 }
 
 void View::DrawSubTree(const GeomNode& node) {
   DrawOneNode(node);
-  for (auto& child : node.children) {
+  for (const auto& child : node.children) {
     scene_.addLine(QLineF(ConvertMyPointToQPoint(child->upper_mid_point),
                           ConvertMyPointToQPoint(node.lower_mid_point)),
                    QPen(Qt::black));

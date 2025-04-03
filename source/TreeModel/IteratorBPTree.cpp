@@ -13,8 +13,6 @@ namespace BPT::BPTree::Detail {
 
 Iterator::Iterator(Node *node) : node_(node) {}
 
-bool Iterator::IsValid() const { return node_ != nullptr; }
-
 bool Iterator::HasParent() const {
   if (!IsValid()) {
     return false;
@@ -62,14 +60,9 @@ void Iterator::MoveToLeftSibling() {
   node_ = left_sibling;
 }
 
-IteratorChild Iterator::ChildrenBegin() {
+ChildrenView Iterator::Children() {
   assert(!IsLeaf());
-  return {Iterator(GetFistChild(node_))};
-}
-
-IteratorChild Iterator::ChildrenEnd() {
-  assert(!IsLeaf());
-  return {Iterator(BPTree::Detail::GetLastChild(node_)), true};
+  return {node_};
 }
 
 const std::vector<KeyType> &Iterator::GetKeys() {
@@ -77,12 +70,24 @@ const std::vector<KeyType> &Iterator::GetKeys() {
   return node_->keys;
 }
 
-IteratorChild begin(Iterator &node) { return node.ChildrenBegin(); }
+bool Iterator::IsValid() const { return node_ != nullptr; }
 
-IteratorChild end(Iterator &node) { return node.ChildrenEnd(); }
+ChildrenView::ChildrenView(Node *node) : node_(node) {}
+
+IteratorChild ChildrenView::begin() const {
+  return {Iterator(GetFistChild(node_))};
+}
+
+IteratorChild ChildrenView::end() const {
+  return {Iterator(GetLastChild(node_)), true};
+}
 
 bool IteratorChild::operator==(const IteratorChild &rhs) {
   return iter_ == rhs.iter_ && is_end_ == rhs.is_end_;
+}
+
+bool IteratorChild::operator!=(const IteratorChild &rhs) {
+  return iter_ != rhs.iter_ || is_end_ != rhs.is_end_;
 }
 
 IteratorChild &IteratorChild::operator++() {

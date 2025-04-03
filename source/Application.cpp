@@ -1,7 +1,5 @@
 #include "Application.h"
 
-#include <qobject.h>
-
 #include "Controllers.h"
 
 namespace BPT {
@@ -13,8 +11,7 @@ Application::Application()
       view_(),
       window_(),
       controller1_(&model_, window_.GetKeyEdit()),
-      controller2_(&model_, window_.GetSpinBoxDegree(),
-                   view_.FunctionClearScene()),
+      controller2_(&model_, window_.GetSpinBoxDegree()),
       controller3_(animator_.GetTimer()) {
   model_.SubscribeGeomModel(&geom_model_);
   geom_model_.SubscribeAnimator(&animator_);

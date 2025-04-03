@@ -30,6 +30,7 @@ enum class Color {
   Green,
   Red,
   Orange,
+  White,
 };
 
 Color ConvertStatusToColor(Status status);
@@ -52,7 +53,7 @@ struct GeomNode {
   Point lower_mid_point;
   std::vector<std::unique_ptr<GeomNode>> children;
   GeomNode* parent;
-  Color clr = Color::Green;
+  Color clr = Color::White;
 };
 
 double GetLowerY(GeomNode* node);

@@ -1,13 +1,10 @@
 #pragma once
 
-#include <qlineedit.h>
-#include <qobjectdefs.h>
-#include <qslider.h>
-
 #include <QLineEdit>
 #include <QObject>
+#include <QSlider>
 #include <QSpinBox>
-#include <functional>
+#include <QTimer>
 
 namespace BPT {
 
@@ -40,8 +37,7 @@ class ControllerInsertFindDelete : public QObject {
 class ControllerClearAndDegree : public QObject {
   Q_OBJECT
  public:
-  ControllerClearAndDegree(BPTree::BPlusTree* bp_tree, QSpinBox* box_degree,
-                           std::function<void(void)> clear_scene);
+  ControllerClearAndDegree(BPTree::BPlusTree* bp_tree, QSpinBox* box_degree);
   ControllerClearAndDegree(const ControllerClearAndDegree&) = delete;
   ControllerClearAndDegree(ControllerClearAndDegree&&) = delete;
   ControllerClearAndDegree& operator=(const ControllerClearAndDegree&) = delete;
@@ -54,7 +50,6 @@ class ControllerClearAndDegree : public QObject {
 
  private:
   BPTree::BPlusTree* bp_tree_;
-  std::function<void(void)> clear_scene_;
   QSpinBox* box_degree_;
   int previous_degree_ = 3;
 };

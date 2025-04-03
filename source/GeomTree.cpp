@@ -12,10 +12,12 @@ namespace GeomTreeDetail {
 Color ConvertStatusToColor(Status status) {
   switch (status) {
     case Status::Found:
-      return Color::Blue;
-    case Status::Search:
+      return Color::Green;
+    case Status::NotFound:
       return Color::Red;
-    case Status::Unity:
+    case Status::Search:
+      return Color::Blue;
+    case Status::IntermediateState:
       return Color::Orange;
     default:
       assert(false);
@@ -85,6 +87,9 @@ void SetKeys(BPTreeIterator iter, GeomNode *node) {
 
 GeomBPlusTree::GeomBPlusTree(const DataFromBPTree &data) {
   Iterator iter_node = data.iter;
+  if (!iter_node.IsValid()) {
+    return;
+  }
   double left_border = 0;
   root_ = BuildSubtree(iter_node, data.statuses, 0, &left_border);
 }
@@ -92,9 +97,7 @@ GeomBPlusTree::GeomBPlusTree(const DataFromBPTree &data) {
 std::unique_ptr<GeomTreeDetail::GeomNode> GeomBPlusTree::BuildSubtree(
     Iterator iter_node, const Statuses &statuses,
     const double start_height_for_node, double *left_border) {
-  assert(iter_node.IsValid());
-
-  auto new_node = std::make_unique<GeomNode>();
+  std::unique_ptr<GeomNode> new_node = std::make_unique<GeomNode>();
   SetY(new_node.get(), start_height_for_node);
   SetKeys(iter_node, new_node.get());
   if (statuses.contains(iter_node)) {
@@ -107,7 +110,7 @@ std::unique_ptr<GeomTreeDetail::GeomNode> GeomBPlusTree::BuildSubtree(
                     GeomTreeDetail::Settings::WidthBetweenNodes;
     lower_right_point_of_tree_ = new_node->node_size.lower_right_point;
   } else {
-    for (auto child : iter_node) {
+    for (Iterator child : iter_node.Children()) {
       new_node->children.push_back(
           BuildSubtree(child, statuses,
                        GetLowerY(new_node.get()) +

@@ -1,10 +1,8 @@
 #pragma once
 
-#include <qpoint.h>
-
 #include <QGraphicsRectItem>
 #include <QGraphicsScene>
-#include <functional>
+#include <QPoint>
 
 #include "GeomTree.h"
 #include "TreeModel/BPTreeNode.h"
@@ -36,7 +34,6 @@ class View {
   View();
   ViewObserver* GetObserverPort();
   QGraphicsScene* GetScene();
-  std::function<void(void)> FunctionClearScene();
 
  private:
   QPointF ConvertMyPointToQPoint(const GeomTreePoint& point);

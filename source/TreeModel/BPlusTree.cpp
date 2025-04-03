@@ -22,6 +22,22 @@ void BPlusTree::SetDegree(int64_t max_degree) {
   max_degree_ = max_degree;
 }
 
+bool BPlusTree::FindKey(KeyType key) {
+  Node *node_with_key = FindLeafWithKey(key);
+  assert(node_with_key != nullptr);
+  statuses_.clear();
+  bool is_key_in_node = IsKeyInNode(node_with_key, key);
+  if (is_key_in_node) {
+    statuses_[Iterator(node_with_key)] = Status::Found;
+  } else {
+    statuses_[Iterator(node_with_key)] = Status::NotFound;
+  }
+  port_.notify();
+  statuses_.clear();
+  port_.notify();
+  return is_key_in_node;
+}
+
 bool BPlusTree::Insert(KeyType key) {
   if (root_ == nullptr) {
     root_ = std::make_unique<Node>();
@@ -34,20 +50,31 @@ bool BPlusTree::Insert(KeyType key) {
     return true;
   }
 
-  if (FindKey(key)) {
-    return false;
-  }
-
   Node *leaf = FindLeafWithKey(key);
   assert(leaf != nullptr);
+  bool cant_be_insert = IsKeyInNode(leaf, key);
+
+  if (cant_be_insert) {
+    statuses_[Iterator(leaf)] = Status::NotFound;
+    port_.notify();
+
+    statuses_.clear();
+    port_.notify();
+
+    return false;
+  } else {
+    statuses_[Iterator(leaf)] = Status::Found;
+    port_.notify();
+  }
 
   InsertKeyInNode(leaf, key);
-  statuses_.clear();
-  port_.notify();
 
   if (leaf->keys.size() >= max_degree_) {
     Split(leaf);
   }
+
+  statuses_.clear();
+  port_.notify();
 
   assert(IsStateCorrect(root_.get()));
   return true;
@@ -69,6 +96,8 @@ void BPlusTree::Reset() {
   if (root_) {
     root_ = nullptr;
   }
+  statuses_.clear();
+  port_.notify();
 }
 
 void BPlusTree::SubscribeGeomModel(GeomModel *geom_model_) {
@@ -86,6 +115,11 @@ void BPlusTree::InsertKeyInNode(Node *node, KeyType key) {
 
 void BPlusTree::Split(Node *old_node) {
   assert(old_node != nullptr);
+
+  statuses_.clear();
+  statuses_[Iterator(old_node)] = Status::IntermediateState;
+  port_.notify();
+
   Node *parent = old_node->parent;
   auto new_left_node = std::make_unique<Node>();
   auto new_right_node = std::make_unique<Node>();
@@ -131,7 +165,16 @@ void BPlusTree::Split(Node *old_node) {
 
   iter_pos_in_children->reset();
   *iter_pos_in_children = std::move(new_left_node);
-  parent->children.insert(iter_pos_in_children + 1, std::move(new_right_node));
+  // parent->children.insert(iter_pos_in_children + 1,
+  // std::move(new_right_node));
+  auto new_iter = parent->children.emplace(iter_pos_in_children + 1,
+                                           std::move(new_right_node));
+
+  statuses_.clear();
+  statuses_[Iterator(std::prev(new_iter)->get())] = Status::IntermediateState;
+  statuses_[Iterator(new_iter->get())] = Status::IntermediateState;
+  statuses_[Iterator(parent)] = Status::IntermediateState;
+  port_.notify();
 
   statuses_.clear();
   port_.notify();
@@ -139,13 +182,6 @@ void BPlusTree::Split(Node *old_node) {
   if (parent->keys.size() >= max_degree_) {
     Split(parent);
   }
-}
-
-bool BPlusTree::FindKey(KeyType key) {
-  statuses_.clear();
-  const Node *node_with_key = FindLeafWithKey(key);
-  assert(node_with_key != nullptr);
-  return IsKeyInNode(node_with_key, key);
 }
 
 Detail::Node *BPlusTree::FindLeafWithKey(KeyType key) {
@@ -157,22 +193,18 @@ Detail::Node *BPlusTree::FindLeafWithKeyFromNode(KeyType key, Node *node) {
     return nullptr;
   }
   assert(node != nullptr);
-  if (IsLeaf(node)) {
-    statuses_.clear();
-    statuses_[Iterator(node)] = Status::Found;
-    port_.notify();
-    return node;
-  }
 
   statuses_.clear();
-  statuses_[Iterator(node)] = Status::Found;
+  statuses_[Iterator(node)] = Status::Search;
+  port_.notify();
+
+  if (IsLeaf(node)) {
+    return node;
+  }
 
   auto iter = std::ranges::upper_bound(node->keys, key);
   size_t num_of_child_with_key = std::distance(node->keys.begin(), iter);
   Node *child_with_key = node->children[num_of_child_with_key].get();
-
-  statuses_[Iterator(child_with_key)] = Status::Search;
-  port_.notify();
 
   return FindLeafWithKeyFromNode(key, child_with_key);
 }
@@ -190,17 +222,17 @@ void BPlusTree::DeleteInNode(Node *node, KeyType key) {
   }
 
   if (node->keys.size() < (max_degree_ / 2)) {
-    statuses_[Iterator(node)] = Status::Unity;
+    statuses_[Iterator(node)] = Status::IntermediateState;
 
     if (LeftSibling(node) &&
         LeftSibling(node)->keys.size() > (max_degree_ / 2)) {
-      statuses_[Iterator(LeftSibling(node))] = Status::Unity;
+      statuses_[Iterator(LeftSibling(node))] = Status::IntermediateState;
       port_.notify();
 
       BorrowFromLeft(node, key);
     } else if (RightSibling(node) &&
                RightSibling(node)->keys.size() > (max_degree_ / 2)) {
-      statuses_[Iterator(RightSibling(node))] = Status::Unity;
+      statuses_[Iterator(RightSibling(node))] = Status::IntermediateState;
       port_.notify();
 
       BorrowFromRight(node);
@@ -272,7 +304,7 @@ void BPlusTree::Merge(Node *node, KeyType key_of_node_in_parent) {
   parent->children.erase(iter);
 
   if (left_sibling) {
-    statuses_[Iterator(left_sibling)] = Status::Unity;
+    statuses_[Iterator(left_sibling)] = Status::IntermediateState;
     port_.notify();
 
     if (IsLeaf(node)) {
@@ -299,7 +331,7 @@ void BPlusTree::Merge(Node *node, KeyType key_of_node_in_parent) {
       node->parent = nullptr;
     }
   } else if (right_sibling) {
-    statuses_[Iterator(right_sibling)] = Status::Unity;
+    statuses_[Iterator(right_sibling)] = Status::IntermediateState;
     port_.notify();
 
     if (IsLeaf(node)) {

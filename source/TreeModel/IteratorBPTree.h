@@ -14,7 +14,8 @@ struct std::hash<BPT::BPTree::Detail::Iterator> {
 };
 
 namespace BPT::BPTree::Detail {
-struct IteratorChild;
+class IteratorChild;
+class ChildrenView;
 
 class Iterator {
   friend std::hash<Iterator>;
@@ -29,11 +30,9 @@ class Iterator {
   void MoveToRightSibling();
   bool HasLeftSibling() const;
   void MoveToLeftSibling();
-
-  IteratorChild ChildrenBegin();
-  IteratorChild ChildrenEnd();
   bool operator==(const Iterator &rhs) const = default;
   const std::vector<KeyType> &GetKeys();
+  ChildrenView Children();
 
   bool IsValid() const;
 
@@ -41,8 +40,15 @@ class Iterator {
   Node *node_;
 };
 
-IteratorChild begin(Iterator &node);
-IteratorChild end(Iterator &node);
+class ChildrenView {
+ public:
+  ChildrenView(Node *node);
+  IteratorChild begin() const;
+  IteratorChild end() const;
+
+ private:
+  Node *node_;
+};
 
 class IteratorChild {
  public:
@@ -50,6 +56,7 @@ class IteratorChild {
       : iter_(iter_node), is_end_(is_end) {}
 
   bool operator==(const IteratorChild &rhs);
+  bool operator!=(const IteratorChild &rhs);
   IteratorChild &operator++();
   IteratorChild &operator--();
   Iterator &operator*();
