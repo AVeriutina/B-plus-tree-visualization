@@ -13,17 +13,18 @@ using MyRectangle = GeomTreeDetail::Rectangle;
 using MyColor = GeomTreeDetail::Color;
 using MyPoint = GeomTreeDetail::Point;
 
-QColor ConvertMyColorToQColor(const MyColor& clr) {
+QColor ConvertMyColorToQColor(MyColor clr) {
   switch (clr) {
-    case MyColor::Blue:
+    using enum MyColor;
+    case Blue:
       return QColor(173, 216, 230);
-    case MyColor::Green:
+    case Green:
       return QColor(152, 251, 152);
-    case MyColor::Red:
+    case Red:
       return QColor(255, 182, 193);
-    case MyColor::Orange:
+    case Orange:
       return QColor(255, 204, 153);
-    case MyColor::White:
+    case White:
       return Qt::white;
     default:
       return Qt::black;
@@ -38,7 +39,6 @@ View::View()
 }
 
 View::ViewObserver* View::GetObserverPort() { return &input_port_; }
-
 QGraphicsScene* View::GetScene() { return &scene_; }
 
 QPointF View::ConvertMyPointToQPoint(const GeomTreePoint& point) {

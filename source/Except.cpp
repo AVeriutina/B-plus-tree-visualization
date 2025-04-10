@@ -8,7 +8,7 @@ void React() {
   try {
     throw;
   } catch (...) {
-    std::cout << "Unknown exeption." << std::endl;
+    std::cout << "Unknown exception." << std::endl;
   }
 }
 

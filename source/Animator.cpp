@@ -39,7 +39,7 @@ Animator::ConstGeomBPTree Animator::SendOneWaiting() {
   assert(!queue_.empty());
   ConstGeomBPTree waiting = std::move(queue_.front());
   queue_.pop();
-  return std::move(waiting);
+  return waiting;
 }
 
 }  // namespace BPT

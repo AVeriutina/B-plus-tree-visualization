@@ -156,6 +156,7 @@ class CObservable {
       obs->unsubscribe();
     Listeners_.push_back(obs);
     obs->setObservable(this);
+    obs->onNotify_(Data_());
   }
   void unsubscribeAll() {
     while (!Listeners_.empty()) Listeners_.front()->unsubscribe();

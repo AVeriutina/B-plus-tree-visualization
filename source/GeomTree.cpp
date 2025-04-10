@@ -11,13 +11,14 @@ namespace GeomTreeDetail {
 
 Color ConvertStatusToColor(Status status) {
   switch (status) {
-    case Status::Found:
+    using enum Status;
+    case Found:
       return Color::Green;
-    case Status::NotFound:
+    case NotFound:
       return Color::Red;
-    case Status::Search:
+    case Search:
       return Color::Blue;
-    case Status::IntermediateState:
+    case IntermediateState:
       return Color::Orange;
     default:
       assert(false);

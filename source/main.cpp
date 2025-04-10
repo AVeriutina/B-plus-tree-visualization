@@ -1,7 +1,7 @@
 #include <QApplication>
 
 #include "Application.h"
-// #include "Except.h"
+#include "Except.h"
 
 int main(int argc, char** argv) {
   try {
@@ -10,6 +10,6 @@ int main(int argc, char** argv) {
     app.Run();
     return qt_runtime.exec();
   } catch (...) {
-    // except::react();  // тут обрабатываются исключения
+    Except::React();
   }
 }

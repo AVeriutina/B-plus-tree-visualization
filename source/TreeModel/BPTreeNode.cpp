@@ -23,7 +23,7 @@ Node *LeftSibling(Node *node) {
   if (iter_of_right == parent->children.begin()) {
     return nullptr;
   }
-  return (*(iter_of_right - 1)).get();
+  return (*std::prev(iter_of_right)).get();
 }
 
 Node *RightSibling(Node *left_sibling) {
@@ -65,9 +65,9 @@ void LinkSiblings(Node *left_node, Node *right_node) {
 }
 
 void UpdateParent(const std::vector<std::unique_ptr<Node>> &children,
-                  Node *new_parant) {
+                  Node *new_parent) {
   for (const auto &child : children) {
-    child->parent = new_parant;
+    child->parent = new_parent;
   }
 }
 
@@ -82,7 +82,34 @@ bool IsParentForNode(Node *parent, Node *child) {
   return child->parent == parent;
 }
 
-Node *GetFistChild(Node *node) {
+KeyType GetKeyInParent(Node *node) {
+  assert(node->parent != nullptr);
+  Node *parent = node->parent;
+  auto iter_of_node = std::ranges::find_if(
+      parent->children,
+      [node](const std::unique_ptr<Node> &lhs) { return lhs.get() == node; });
+  auto pos_of_node_in_parent =
+      std::distance(parent->children.begin(), iter_of_node);
+  if (pos_of_node_in_parent == 0) {
+    return parent->keys.front();
+  }
+  return parent->keys[pos_of_node_in_parent - 1];
+}
+
+std::vector<KeyType>::iterator GetIterOnKeyOfNodeInParent(Node *node) {
+  assert(node);
+  Node *parent = node->parent;
+  assert(parent);
+  auto iter_of_node = std::ranges::find_if(
+      parent->children,
+      [node](const std::unique_ptr<Node> &lhs) { return lhs.get() == node; });
+  assert(iter_of_node != parent->children.begin());
+  long pos_of_node_in_parent =
+      std::distance(parent->children.begin(), iter_of_node);
+  return parent->keys.begin() + pos_of_node_in_parent - 1;
+}
+
+Node *GetFirstChild(Node *node) {
   assert(node);
   assert(!IsLeaf(node));
   return node->children.front().get();

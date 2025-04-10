@@ -18,7 +18,7 @@ namespace Settings {
 constexpr double HeightOfKey = 40.;
 constexpr double WidthOfKey = 65.;
 constexpr double DistBetweenKeys = 8.;
-constexpr double DistKeyBorder = 5.;
+constexpr double DistKeyBorder = 7.5;
 constexpr double HeightOfNode = 2 * DistKeyBorder + HeightOfKey;
 constexpr double HeightBetweenNodes = 15.;
 constexpr double WidthBetweenNodes = 15.;

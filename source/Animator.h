@@ -21,7 +21,7 @@ class Animator : public QObject {
   using AnimatorObserver =
       NSLibrary::CColdInput<ConstGeomBPTree, NSLibrary::CByValue>;
 
-  static constexpr int standart_interval_between_frames_ = 400;
+  static constexpr int standard_interval_between_frames_ = 400;
 
  public:
   Animator();
@@ -40,7 +40,7 @@ class Animator : public QObject {
   AnimatorObserver input_port_;
   AnimatorObservable output_port_;
 
-  int interval_between_frames_ = standart_interval_between_frames_;
+  int interval_between_frames_ = standard_interval_between_frames_;
   QTimer timer_;
   std::queue<ConstGeomBPTree> queue_;
 };

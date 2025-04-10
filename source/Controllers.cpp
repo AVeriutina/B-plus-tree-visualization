@@ -3,11 +3,12 @@
 #include <QMessageBox>
 #include <cassert>
 
+#include "MainWindowDetail.h"
 #include "TreeModel/BPlusTree.h"
 
 namespace BPT {
 
-namespace ControllerDetail {
+namespace {
 
 void ShowIncorrectInputMessage() {
   QMessageBox error_box;
@@ -30,8 +31,7 @@ bool ShowConfirmationOfAction() {
   int result = confirmation_box.exec();
   return (result == QMessageBox::Ok);
 }
-
-}  // namespace ControllerDetail
+}  // namespace
 
 ControllerInsertFindDelete::ControllerInsertFindDelete(
     BPTree::BPlusTree* bp_tree, QLineEdit* key_edit)
@@ -58,7 +58,7 @@ void ControllerInsertFindDelete::PushButtonClicked(
   if (convert_to_int) {
     operation(value);
   } else {
-    ControllerDetail::ShowIncorrectInputMessage();
+    ShowIncorrectInputMessage();
   }
 }
 
@@ -69,7 +69,9 @@ ControllerClearAndDegree::ControllerClearAndDegree(BPTree::BPlusTree* bp_tree,
 void ControllerClearAndDegree::OnPushButtonClearClicked() { bp_tree_->Reset(); }
 
 void ControllerClearAndDegree::OnSpinBoxValueChanged(int new_degree) {
-  if (ControllerDetail::ShowConfirmationOfAction()) {
+  using namespace MainWindowDetails;
+
+  if (ShowConfirmationOfAction()) {
     bp_tree_->SetDegree(new_degree);
     previous_degree_ = new_degree;
   } else {
@@ -82,7 +84,8 @@ void ControllerClearAndDegree::OnSpinBoxValueChanged(int new_degree) {
 ControllerTimer::ControllerTimer(QTimer* timer) : timer_(timer) {}
 
 void ControllerTimer::SetInterval(int msec) {
-  timer_->setInterval(2100 - msec);
+  using namespace MainWindowDetails;
+  timer_->setInterval(MaxAnimationSpeed + MinAnimationSpeed - msec);
 }
 
 }  // namespace BPT

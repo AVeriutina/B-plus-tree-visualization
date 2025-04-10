@@ -29,22 +29,28 @@ void UpdateParent(const std::vector<std::unique_ptr<Node>> &children,
                   Node *new_parent);
 bool IsNodeStateCorrect(Node *node);
 bool IsParentForNode(Node *parent, Node *child);
+KeyType GetKeyInParent(Node *node);
+std::vector<KeyType>::iterator GetIterOnKeyOfNodeInParent(Node *node);
 
-Node *GetFistChild(Node *node);
+Node *GetFirstChild(Node *node);
 Node *GetLastChild(Node *node);
 
 template <typename T>
-void AssignLeftHalf(std::vector<T> *from, std::vector<T> *to) {
+void AssignLeftHalf(std::vector<T> *from, std::vector<T> *to,
+                    bool is_not_leaf) {
   assert(to);
   to->assign(std::make_move_iterator(from->begin()),
-             std::make_move_iterator(from->begin() + from->size() / 2));
+             std::make_move_iterator(from->begin() +
+                                     (from->size() + is_not_leaf) / 2));
 }
 
 template <typename T>
-void AssignRightHalf(std::vector<T> *from, std::vector<T> *to) {
+void AssignRightHalf(std::vector<T> *from, std::vector<T> *to,
+                     bool is_not_leaf) {
   assert(to);
-  to->assign(std::make_move_iterator(from->begin() + from->size() / 2),
-             std::make_move_iterator(from->end()));
+  to->assign(
+      std::make_move_iterator(from->begin() + (from->size() + is_not_leaf) / 2),
+      std::make_move_iterator(from->end()));
 }
 
 }  // namespace BPT::BPTree::Detail

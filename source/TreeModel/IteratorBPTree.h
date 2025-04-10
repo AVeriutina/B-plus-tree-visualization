@@ -23,12 +23,12 @@ class Iterator {
  public:
   Iterator(Node *node);
 
-  bool HasParent() const;
-  bool IsLeaf() const;
+  [[nodiscard]] bool HasParent() const;
+  [[nodiscard]] bool IsLeaf() const;
   void MoveToParent();
-  bool HasRightSibling() const;
+  [[nodiscard]] bool HasRightSibling() const;
   void MoveToRightSibling();
-  bool HasLeftSibling() const;
+  [[nodiscard]] bool HasLeftSibling() const;
   void MoveToLeftSibling();
   bool operator==(const Iterator &rhs) const = default;
   const std::vector<KeyType> &GetKeys();
@@ -43,8 +43,8 @@ class Iterator {
 class ChildrenView {
  public:
   ChildrenView(Node *node);
-  IteratorChild begin() const;
-  IteratorChild end() const;
+  [[nodiscard]] IteratorChild begin() const;
+  [[nodiscard]] IteratorChild end() const;
 
  private:
   Node *node_;

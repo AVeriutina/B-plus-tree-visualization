@@ -75,7 +75,7 @@ bool Iterator::IsValid() const { return node_ != nullptr; }
 ChildrenView::ChildrenView(Node *node) : node_(node) {}
 
 IteratorChild ChildrenView::begin() const {
-  return {Iterator(GetFistChild(node_))};
+  return {Iterator(GetFirstChild(node_))};
 }
 
 IteratorChild ChildrenView::end() const {

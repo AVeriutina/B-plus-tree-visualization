@@ -1,7 +1,5 @@
 #pragma once
 
-#include <qslider.h>
-
 #include <QApplication>
 #include <QGraphicsView>
 #include <QLabel>

@@ -26,9 +26,9 @@ class Application {
   Animator animator_;
   View view_;
   MainWindow window_;
-  ControllerInsertFindDelete controller1_;
-  ControllerClearAndDegree controller2_;
-  ControllerTimer controller3_;
+  ControllerInsertFindDelete controller_work_with_key_;
+  ControllerClearAndDegree controller_for_clean_;
+  ControllerTimer controller_timer_;
 };
 
 }  // namespace BPT

@@ -1,11 +1,10 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 #include "BPTreeData.h"
-#include "BPTreeNode.h"
 #include "Observer.h"
 
 namespace BPT {
@@ -33,6 +32,9 @@ class BPlusTree {
   static constexpr auto UpdateParent = Detail::UpdateParent;
   static constexpr auto IsNodeStateCorrect = Detail::IsNodeStateCorrect;
   static constexpr auto IsParentForNode = Detail::IsParentForNode;
+  static constexpr auto GetKeyInParent = Detail::GetKeyInParent;
+  static constexpr auto GetIterOnKeyOfNodeInParent =
+      Detail::GetIterOnKeyOfNodeInParent;
 
  public:
   BPlusTree();
@@ -50,9 +52,13 @@ class BPlusTree {
   Node *FindLeafWithKey(KeyType key);
   Node *FindLeafWithKeyFromNode(KeyType key, Node *start_node);
   void DeleteInNode(Node *node, KeyType key);
-  void BorrowFromLeft(Node *node, KeyType prev_key);
+  void BorrowFromSibling(Node *node, bool for_left_sibling, KeyType prev_key,
+                         KeyType new_key_instead_of_prev,
+                         bool is_begin_of_keys);
+  void BorrowFromLeft(Node *node);
   void BorrowFromRight(Node *node);
-  void Merge(Node *node, KeyType key_of_node_in_parent);
+  void Merge(Node *node, KeyType key_of_node_in_parent,
+             std::optional<KeyType> need_update_of_keys);
   void UpdateKeys(Node *node, KeyType prev_key, KeyType new_key);
   Data GetData() const;
 
