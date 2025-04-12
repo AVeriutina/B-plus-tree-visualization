@@ -17,9 +17,7 @@ GeomModel::GeomModel()
 GeomModel::GeomObserver* GeomModel::GetObserverPort() { return &input_port_; }
 
 void GeomModel::SubscribeAnimator(Animator* animator) {
-  output_port_.subscribe(
-      static_cast<NSLibrary::CObserver<ConstGeomBPTree, NSLibrary::CByValue>*>(
-          animator->GetObserverPort()));
+  output_port_.subscribe(animator->GetObserverPort());
 }
 
 void GeomModel::ActionOnNotify(const DataFromBPTree& data) {

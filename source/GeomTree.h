@@ -15,14 +15,13 @@ using Status = BPTree::Detail::Status;
 using BPTreeIterator = BPTree::Detail::Iterator;
 
 namespace Settings {
-constexpr double HeightOfKey = 40.;
-constexpr double WidthOfKey = 65.;
-constexpr double DistBetweenKeys = 8.;
-constexpr double DistKeyBorder = 7.5;
-constexpr double HeightOfNode = 2 * DistKeyBorder + HeightOfKey;
-constexpr double HeightBetweenNodes = 15.;
-constexpr double WidthBetweenNodes = 15.;
-
+inline constexpr double HeightOfKey = 40.;
+inline constexpr double WidthOfKey = 65.;
+inline constexpr double DistBetweenKeys = 8.;
+inline constexpr double DistKeyBorder = 7.5;
+inline constexpr double HeightOfNode = 2 * DistKeyBorder + HeightOfKey;
+inline constexpr double HeightBetweenNodes = 15.;
+inline constexpr double WidthBetweenNodes = 15.;
 }  // namespace Settings
 
 enum class Color {
@@ -65,18 +64,6 @@ void SetXWithLeftBorder(GeomNode* node, double left_border);
 void SetXWithCenter(GeomNode* node, double center);
 void SetY(GeomNode* node, double upper_border);
 void SetKeys(BPTreeIterator iter, GeomNode* node);
-
-template <class Data>
-class ConstValue {
- public:
-  ConstValue() = default;
-  ConstValue(Data&& data)
-      : data_(std::make_shared<const Data>(std::move(data))) {}
-  const Data* operator->() const { return data_.get(); }
-
- private:
-  std::shared_ptr<const Data> data_;
-};
 
 struct DataFromGeomTree {
   const GeomNode* root = nullptr;

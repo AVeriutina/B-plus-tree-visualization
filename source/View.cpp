@@ -77,7 +77,7 @@ void View::DrawOneNode(const GeomNode& geom_node) {
 
 void View::DrawTree(ConstGeomBPTree data) {
   scene_.clear();
-  if (!data->GetDataOfTree().root) {
+  if (!data || !data->GetDataOfTree().root) {
     return;
   }
   CalcOffset(data->GetDataOfTree().lower_right_point_of_tree_);

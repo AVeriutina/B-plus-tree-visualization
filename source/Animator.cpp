@@ -15,9 +15,7 @@ Animator::Animator()
 Animator::AnimatorObserver* Animator::GetObserverPort() { return &input_port_; }
 
 void Animator::SubscribeView(View* view) {
-  output_port_.subscribe(
-      static_cast<NSLibrary::CObserver<ConstGeomBPTree, NSLibrary::CByValue>*>(
-          view->GetObserverPort()));
+  output_port_.subscribe(view->GetObserverPort());
 }
 
 QTimer* Animator::GetTimer() { return &timer_; }
@@ -27,6 +25,10 @@ void Animator::OnTimer() {
     timer_.stop();
     return;
   }
+  assert(!queue_.empty());
+  waiting_for_draw_ = std::move(queue_.front());
+  queue_.pop();
+
   output_port_.notify();
 }
 
@@ -36,10 +38,7 @@ void Animator::ActionOnNotify(ConstGeomBPTree data) {
 }
 
 Animator::ConstGeomBPTree Animator::SendOneWaiting() {
-  assert(!queue_.empty());
-  ConstGeomBPTree waiting = std::move(queue_.front());
-  queue_.pop();
-  return waiting;
+  return waiting_for_draw_;
 }
 
 }  // namespace BPT

@@ -4,6 +4,7 @@
 #include <QGraphicsScene>
 #include <QPoint>
 
+#include "ConstValue.h"
 #include "GeomTree.h"
 #include "TreeModel/BPTreeNode.h"
 
@@ -22,7 +23,7 @@ struct DrawNode {
 }  // namespace ViewDetail
 
 class View {
-  using ConstGeomBPTree = GeomTreeDetail::ConstValue<GeomBPlusTree>;
+  using ConstGeomBPTree = Detail::ConstValue<GeomBPlusTree>;
   using ViewObserver =
       NSLibrary::CColdInput<ConstGeomBPTree, NSLibrary::CByValue>;
   using GeomNode = GeomTreeDetail::GeomNode;
@@ -43,13 +44,13 @@ class View {
   void DrawTree(ConstGeomBPTree data);
   void DrawSubTree(const GeomNode& node);
 
-  ViewObserver input_port_;
-  QGraphicsScene scene_;
-
   static constexpr int width_of_scene_ = 1000;
   static constexpr int height_of_scene_ = 800;
   static constexpr QPointF center_of_scene_ = {width_of_scene_ / 2,
                                                height_of_scene_ / 2};
+
+  ViewObserver input_port_;
+  QGraphicsScene scene_;
   QPointF offset_for_centering_;
 };
 }  // namespace BPT

@@ -4,12 +4,13 @@
 #include "Except.h"
 
 int main(int argc, char** argv) {
+  QApplication qt_runtime(argc, argv);
   try {
-    QApplication qt_runtime(argc, argv);
     BPT::Application app;
     app.Run();
     return qt_runtime.exec();
   } catch (...) {
     Except::React();
   }
+  return 0;
 }

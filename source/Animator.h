@@ -4,6 +4,7 @@
 #include <QTimer>
 #include <queue>
 
+#include "ConstValue.h"
 #include "GeomTree.h"
 #include "Observer.h"
 
@@ -13,7 +14,7 @@ class View;
 
 class Animator : public QObject {
   Q_OBJECT
-  using ConstGeomBPTree = GeomTreeDetail::ConstValue<GeomBPlusTree>;
+  using ConstGeomBPTree = Detail::ConstValue<GeomBPlusTree>;
 
   using AnimatorObservable =
       NSLibrary::CObservable<ConstGeomBPTree, NSLibrary::CByValue>;
@@ -43,6 +44,7 @@ class Animator : public QObject {
   int interval_between_frames_ = standard_interval_between_frames_;
   QTimer timer_;
   std::queue<ConstGeomBPTree> queue_;
+  ConstGeomBPTree waiting_for_draw_;
 };
 
 }  // namespace BPT

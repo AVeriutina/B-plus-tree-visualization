@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ConstValue.h"
 #include "GeomTree.h"
 #include "Observer.h"
 
@@ -9,7 +10,7 @@ class Animator;
 
 class GeomModel {
   using DataFromBPTree = BPTree::Detail::DataFromBPTree;
-  using ConstGeomBPTree = GeomTreeDetail::ConstValue<GeomBPlusTree>;
+  using ConstGeomBPTree = Detail::ConstValue<GeomBPlusTree>;
   using GeomObservable =
       NSLibrary::CObservable<ConstGeomBPTree, NSLibrary::CByValue>;
 

@@ -109,9 +109,7 @@ void BPlusTree::Reset() {
 
 void BPlusTree::SubscribeGeomModel(GeomModel *geom_model_) {
   assert(geom_model_);
-  port_.subscribe(
-      static_cast<NSLibrary::CObserver<Data, NSLibrary::CByValue> *>(
-          geom_model_->GetObserverPort()));
+  port_.subscribe(geom_model_->GetObserverPort());
 }
 
 void BPlusTree::InsertKeyInNode(Node *node, KeyType key) {
